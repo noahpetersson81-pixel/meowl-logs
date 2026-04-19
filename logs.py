@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ================== SETTINGS ==================
 CHANNEL_ID = 1495439811509489814
-BOT_TOKEN = os.getenv("BOT_TOKEN")   # ← Token will come from Render
+BOT_TOKEN = os.getenv("BOT_TOKEN")   # ← Set this on Render only
 
 # ================== OG / HIGH TIER (only top highlight) ==================
 OG_BRAINROTS = [
