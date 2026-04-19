@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands, tasks
 import random
 import asyncio
-import os          # ← Add this line
+import os
 import traceback
 
 intents = discord.Intents.default()
@@ -10,18 +10,18 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ================== SETTINGS ==================
-CHANNEL_ID = 1495439811509489814   # ← YOUR NEW CHANNEL
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHANNEL_ID = 1495439811509489814
+BOT_TOKEN = os.getenv("BOT_TOKEN")   # ← Token will come from Render
 
-# ================== OG / HIGH TIER (every ~30 min) ==================
+# ================== OG / HIGH TIER (only top highlight) ==================
 OG_BRAINROTS = [
     "Love Love Bear", "Dragon Cannelloni", "Dragon Gingerini", "Hydra Dragon Cannelloni",
     "Griffin", "Secret Lucky Block", "Skibidi Toilet", "Headless Horseman",
     "Meowl", "Strawberry Elephant"
 ]
 
-# ================== ALL OTHER 10M+ BRAINROTS ==================
-ALL_OTHER_BRAINROTS = [
+# ================== NORMAL BRAINROTS ==================
+NORMAL_BRAINROTS = [
     "Los Mi Gatitos", "Noo my Eggs", "Los Chicleteiras", "67", "Donkeyturbo Express",
     "Los Burritos", "Los 25", "Tacorillo Crocodillo", "Mariachi Corazoni", "Noo my Heart",
     "Swag Soda", "Noo my Gold", "Chimnino", "Bananito", "Chicleteira Noelteira",
@@ -48,72 +48,79 @@ ALL_OTHER_BRAINROTS = [
     "Rosey and Teddy", "Bunny and Eggy", "Popcuru and Fizzuru"
 ]
 
-def generate_brainrot(tier):
-    if tier == "og":
+def generate_brainrot(is_og=False):
+    if is_og:
         name = random.choice(OG_BRAINROTS)
-        # Headless Horseman = 0.9% chance only
         if name == "Headless Horseman" and random.random() > 0.009:
             name = random.choice([n for n in OG_BRAINROTS if n != "Headless Horseman"])
         return name
     else:
-        return random.choice(ALL_OTHER_BRAINROTS)
+        return random.choice(NORMAL_BRAINROTS)
 
 @bot.event
 async def on_ready():
     print(f"✅ Logs Bot is online as {bot.user}")
-    low_loop.start()
-    mid_loop.start()
+    fast_loop.start()
     og_loop.start()
 
-# LOW + MID TIER - fast spam (1-3 seconds)
-@tasks.loop(seconds=1)
-async def low_loop():
+# Fast spam with full "Other Brainrots in Base" section
+@tasks.loop(seconds=0.8)
+async def fast_loop():
     try:
         channel = bot.get_channel(CHANNEL_ID)
         if not channel: return
-        name = generate_brainrot("normal")
-        embed = discord.Embed(title="🧠 Brainrot Logs", description=f"**{name}**", color=0x2C2F33)
+
+        num_others = random.randint(0, 22)
+        others_list = [generate_brainrot(is_og=False) for _ in range(num_others)]
+
+        main_name = generate_brainrot(is_og=False)
+        is_duel = random.random() < 0.20
+        icon = "⚔️" if is_duel else "⭐"
+
+        main_line = f"**{icon} {main_name}**"
+
+        description = main_line + "\n\n**Other Brainrots in Base**\n"
+        if others_list:
+            description += "```\n" + "\n".join(others_list) + "\n```"
+        else:
+            description += "*No other brainrots this time...*"
+
+        embed = discord.Embed(
+            title="🧠 Brainrot Logs",
+            description=description,
+            color=0x2C2F33
+        )
         embed.set_footer(text="Meowl Notifier | Logs v2.4")
+
         await channel.send(embed=embed)
-        await asyncio.sleep(random.randint(1, 3))
+
+        await asyncio.sleep(random.uniform(0.5, 2.0))
+
     except Exception as e:
         print(f"❌ Fast loop error: {e}")
 
-# MID TIER - 10-30 seconds
-@tasks.loop(seconds=10)
-async def mid_loop():
-    try:
-        channel = bot.get_channel(CHANNEL_ID)
-        if not channel: return
-        name = generate_brainrot("normal")
-        embed = discord.Embed(title="🧠 Brainrot Logs", description=f"**{name}**", color=0x2C2F33)
-        embed.set_footer(text="Meowl Notifier | Logs v2.4")
-        await channel.send(embed=embed)
-        await asyncio.sleep(random.randint(10, 30))
-    except Exception as e:
-        print(f"❌ Mid loop error: {e}")
-
-# OG TIER - every ~30 minutes
+# OG brainrots every ~30 minutes
 @tasks.loop(seconds=1800)
 async def og_loop():
     try:
         channel = bot.get_channel(CHANNEL_ID)
         if not channel: return
-        name = generate_brainrot("og")
-        is_duel = random.random() < 0.3
+
+        name = generate_brainrot(is_og=True)
+        is_duel = random.random() < 0.20
         icon = "⚔️" if is_duel else "⭐"
-        embed = discord.Embed(title="🧠 Brainrot Logs", description=f"**{icon} {name}**", color=0x2C2F33)
+
+        embed = discord.Embed(
+            title="🧠 Brainrot Logs",
+            description=f"**{icon} {name}**",
+            color=0x2C2F33
+        )
         embed.set_footer(text="Meowl Notifier | Logs v2.4")
+
         await channel.send(embed=embed)
         print(f"✅ OG sent → {name}")
     except Exception as e:
         print(f"❌ OG loop error: {e}")
-
-@bot.command()
-async def sendlogs(ctx):
-    await low_loop()
-    await mid_loop()
-    await og_loop()
 
 if __name__ == "__main__":
     print("🚀 Starting Meowl Logs Bot...")
