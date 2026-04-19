@@ -10,7 +10,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ================== SETTINGS ==================
 CHANNEL_ID = 1495439811509489814   # ← YOUR NEW CHANNEL
-BOT_TOKEN = "MTQ5MzU4OTQxNTE3ODUzNTAwMg.GLmWC1.B5tj1wREU9eLxCgSxTXmzzozJ2uY4vPkkTIwbA"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # ================== OG / HIGH TIER (every ~30 min) ==================
 OG_BRAINROTS = [
